@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/parentportal/db" VERSION="2025042800" COMMENT="XMLDB file for local_parentportal"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="local_parentportal_children" COMMENT="Stores parent-child relationships and child metadata.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="parentid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to user.id - the parent user"/>
+        <FIELD NAME="childid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to user.id - the child user"/>
+        <FIELD NAME="sex" TYPE="char" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="male or female"/>
+        <FIELD NAME="grade" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="kg1, kg2, grade1..grade12"/>
+        <FIELD NAME="curriculum" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="american, canadian, transition, tunisian"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="parentid_fk" TYPE="foreign" FIELDS="parentid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="childid_fk" TYPE="foreign-unique" FIELDS="childid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="parentid_idx" UNIQUE="false" FIELDS="parentid"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>
