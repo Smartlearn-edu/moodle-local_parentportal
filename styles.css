@@ -36,7 +36,7 @@
 
 /* Children list container */
 .path-local-parentportal .parentportal-children-container {
-    max-width: 900px;
+    max-width: 960px;
     margin: 2rem auto 0;
     background: #fff;
     border-radius: 12px;
@@ -128,11 +128,123 @@
     transition: all 0.2s ease;
 }
 
+/* ============================================================
+   STUDENT CARD VIEW MODE STYLES
+   ============================================================ */
+
+/* Edit button area */
+.path-local-parentportal .parentportal-edit-btn {
+    text-align: right;
+    max-width: 900px;
+    margin: 0 auto 1rem;
+}
+
+.path-local-parentportal .parentportal-edit-btn .btn-primary,
+.path-local-parentportal .parentportal-edit-btn input[type="submit"] {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    border: none;
+    border-radius: 8px;
+    padding: 0.5rem 1.5rem;
+    font-weight: 600;
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+    transition: all 0.2s ease;
+}
+
+.path-local-parentportal .parentportal-edit-btn .btn-primary:hover,
+.path-local-parentportal .parentportal-edit-btn input[type="submit"]:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+    transform: translateY(-1px);
+}
+
+/* Section cards */
+.path-local-parentportal .studentcard-section {
+    max-width: 900px;
+    margin: 0 auto 1.5rem;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+    padding: 1.75rem 2rem;
+    transition: box-shadow 0.2s ease;
+}
+
+.path-local-parentportal .studentcard-section:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.path-local-parentportal .section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 1.25rem 0;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #e2e8f0;
+    position: relative;
+}
+
+.path-local-parentportal .section-title::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, #3b82f6, #2563eb);
+    border-radius: 2px;
+}
+
+/* Card fields grid — two columns */
+.path-local-parentportal .card-fields-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    margin: 0;
+}
+
+.path-local-parentportal .card-field {
+    display: flex;
+    flex-direction: column;
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.path-local-parentportal .card-field dt {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.2rem;
+}
+
+.path-local-parentportal .card-field dd {
+    font-size: 0.95rem;
+    color: #1e293b;
+    margin: 0;
+    font-weight: 500;
+}
+
+/* Remove bottom border on last row */
+.path-local-parentportal .card-fields-grid .card-field:nth-last-child(-n+2) {
+    border-bottom: none;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .path-local-parentportal .parentportal-form-container,
-    .path-local-parentportal .parentportal-children-container {
+    .path-local-parentportal .parentportal-children-container,
+    .path-local-parentportal .studentcard-section {
         margin: 1rem;
         padding: 1.25rem;
+    }
+
+    .path-local-parentportal .card-fields-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .path-local-parentportal .parentportal-edit-btn {
+        text-align: center;
+        margin: 0 1rem 1rem;
     }
 }

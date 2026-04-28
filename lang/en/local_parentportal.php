@@ -32,7 +32,7 @@ $string['addchild'] = 'Add child';
 $string['mychildren'] = 'My children';
 $string['nochildren'] = 'You have not added any children yet.';
 
-// Form fields.
+// Form fields - add child.
 $string['firstname'] = 'First name';
 $string['lastname'] = 'Last name';
 $string['email'] = 'Email';
@@ -79,10 +79,84 @@ $string['error_emailexists'] = 'This email address is already registered.';
 $string['error_usernameexists'] = 'Could not generate a unique username. Please try different names.';
 $string['error_norole'] = 'The parent role has not been configured. Please contact the site administrator.';
 $string['error_creationfailed'] = 'An error occurred while creating the child account. Please try again.';
+$string['error_noaccess'] = 'You do not have permission to access this student card.';
 
-// Table headers.
+// Children table headers.
 $string['childname'] = 'Name';
 $string['childemail'] = 'Email';
 $string['childgrade'] = 'Grade';
 $string['childcurriculum'] = 'Curriculum';
 $string['dateadded'] = 'Date added';
+$string['actions'] = 'Actions';
+$string['studentcard'] = 'Student card';
+$string['editcard'] = 'Edit card';
+$string['viewcard'] = 'View card';
+
+// Student card page.
+$string['studentcardfor'] = 'Student card for {$a}';
+$string['editstudentcard'] = 'Edit student card';
+$string['savecard'] = 'Save card';
+$string['cardsaved'] = 'Student card has been saved successfully.';
+$string['nocarddata'] = 'No information has been entered yet. Click "Edit card" to fill in the student card.';
+
+// Student card sections.
+$string['section_general'] = 'General';
+$string['section_additional'] = 'Additional information';
+$string['section_parent1'] = 'Parent 1 information';
+$string['section_parent2'] = 'Parent 2 information';
+$string['section_guardian'] = 'Legal guardian information';
+$string['section_emergency'] = 'Emergency contact information';
+$string['section_contact'] = 'Contact information';
+
+// General fields.
+$string['nationality'] = 'Nationality';
+$string['passportid'] = 'Passport/ID #';
+$string['address'] = 'Address line 1';
+$string['city'] = 'City';
+$string['state'] = 'State';
+$string['zipcode'] = 'Zipcode';
+$string['telephone'] = 'Telephone';
+$string['healthconditions'] = 'Health conditions if any';
+$string['medication'] = 'Medication';
+$string['recentschool'] = 'Most recent school';
+
+// Additional information.
+$string['refnumber'] = 'Reference number';
+$string['none'] = 'None';
+
+// Contact information.
+$string['studentphone'] = 'Student phone';
+
+// Parent information fields.
+$string['legalguardian'] = 'Legal guardian';
+$string['yes'] = 'Yes';
+$string['no'] = 'No';
+$string['parenttype'] = 'Type';
+$string['father'] = 'Father';
+$string['mother'] = 'Mother';
+$string['other'] = 'Other';
+$string['countryofresidence'] = 'Country of residence';
+$string['educationlevel'] = 'Education level';
+$string['occupation'] = 'Occupation';
+$string['phone1'] = 'Phone 1';
+$string['phone2'] = 'Phone 2';
+
+// Education level options.
+$string['edu_highschool'] = 'High school';
+$string['edu_diploma'] = 'Diploma';
+$string['edu_bachelors'] = 'Bachelor\'s degree';
+$string['edu_masters'] = 'Master\'s degree';
+$string['edu_phd'] = 'PhD';
+$string['edu_other'] = 'Other';
+
+// Guardian fields.
+$string['relationshiptostudent'] = 'Relationship to student';
+
+// Emergency contact fields.
+$string['emergencycontactname'] = 'Emergency contact full name';
+$string['emergencyrelationship'] = 'Relationship to student';
+$string['emergencyphone'] = 'Phone';
+$string['emergencyemail'] = 'Email';
+
+// Confirmation section.
+$string['section_confirmation'] = 'Confirmation';

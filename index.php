@@ -94,18 +94,24 @@ if (empty($children)) {
         get_string('childgrade', 'local_parentportal'),
         get_string('childcurriculum', 'local_parentportal'),
         get_string('dateadded', 'local_parentportal'),
+        get_string('actions', 'local_parentportal'),
     ];
     $table->attributes['class'] = 'table table-striped parentportal-children-table';
 
     foreach ($children as $child) {
-        // User picture.
+        // Fetch the full user record (needed for user_picture and fullname with all name fields).
         $childuser = $DB->get_record('user', ['id' => $child->childid]);
         $userpicture = $OUTPUT->user_picture($childuser, ['size' => 35, 'link' => false]);
 
-        $fullname = fullname($child);
+        $fullname = fullname($childuser);
         $gradelabel = manager::get_grade_label($child->grade);
         $curriculumlabel = manager::get_curriculum_label($child->curriculum);
-        $dateadded = userdate($child->timecreated, get_string('strftimedatefull', 'langconfig'));
+        $dateadded = userdate($child->timecreated);
+
+        // Action links.
+        $cardurl = new moodle_url('/local/parentportal/studentcard.php', ['childid' => $child->childid]);
+        $cardlink = html_writer::link($cardurl, get_string('studentcard', 'local_parentportal'),
+            ['class' => 'btn btn-sm btn-outline-primary']);
 
         $table->data[] = [
             $userpicture,
@@ -114,6 +120,7 @@ if (empty($children)) {
             $gradelabel,
             $curriculumlabel,
             $dateadded,
+            $cardlink,
         ];
     }
 
