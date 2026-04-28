@@ -93,11 +93,22 @@ if ($mode === 'edit') {
 // ============================================================
 echo $OUTPUT->header();
 
-// Edit button.
+// Action buttons.
 $editurl = new moodle_url('/local/parentportal/studentcard.php', ['childid' => $childid, 'mode' => 'edit']);
+$reporturl = new moodle_url('/report/studentgrades/index.php', ['userid' => $childid]);
+
+$buttons_html = $OUTPUT->single_button($editurl, get_string('editcard', 'local_parentportal'), 'get');
+
+if (file_exists($CFG->dirroot . '/report/studentgrades/lib.php')) {
+    require_once($CFG->dirroot . '/report/studentgrades/lib.php');
+    if (function_exists('report_studentgrades_can_access_user') && report_studentgrades_can_access_user($childid)) {
+        $buttons_html .= html_writer::link($reporturl, 'View Grades & AI Report', ['class' => 'btn btn-info', 'style' => 'margin-left: 10px;']);
+    }
+}
+
 echo html_writer::div(
-    $OUTPUT->single_button($editurl, get_string('editcard', 'local_parentportal'), 'get'),
-    'parentportal-edit-btn mb-3'
+    $buttons_html,
+    'parentportal-action-btns mb-3 d-flex align-items-center'
 );
 
 if (!studentcard::has_data($childid)) {
