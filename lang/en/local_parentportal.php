@@ -98,6 +98,7 @@ $string['editstudentcard'] = 'Edit student card';
 $string['savecard'] = 'Save card';
 $string['cardsaved'] = 'Student card has been saved successfully.';
 $string['nocarddata'] = 'No information has been entered yet. Click "Edit card" to fill in the student card.';
+$string['noacademicdata'] = 'No academic records available.';
 
 // Student card sections.
 $string['section_general'] = 'General';
