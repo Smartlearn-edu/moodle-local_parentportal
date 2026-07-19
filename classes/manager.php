@@ -84,7 +84,7 @@ class manager {
         // Assign the parent role in the child's user context.
         self::assign_parent_role($parentid, $user->id);
 
-        return $user;
+        return $DB->get_record('user', ['id' => $user->id], '*', MUST_EXIST);
     }
 
     /**

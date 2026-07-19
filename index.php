@@ -52,20 +52,12 @@ if ($form->is_cancelled()) {
         $child = manager::create_child($data, $parentid);
         $fullname = fullname($child);
         $message = get_string('childcreated', 'local_parentportal', $fullname);
-        redirect(
-            new moodle_url('/local/parentportal/index.php'),
-            $message,
-            null,
-            \core\output\notification::NOTIFY_SUCCESS
-        );
+        \core\notification::add($message, \core\output\notification::NOTIFY_SUCCESS);
+        redirect(new moodle_url('/local/parentportal/index.php'));
     } catch (\Exception $e) {
         $message = $e->getMessage();
-        redirect(
-            new moodle_url('/local/parentportal/index.php'),
-            $message,
-            null,
-            \core\output\notification::NOTIFY_ERROR
-        );
+        \core\notification::add($message, \core\output\notification::NOTIFY_ERROR);
+        redirect(new moodle_url('/local/parentportal/index.php'));
     }
 }
 
