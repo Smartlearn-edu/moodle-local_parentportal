@@ -1,0 +1,188 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+    Parent Portal - Single-Page Portal Master Layout
+}}
+<div class="parentportal-wrapper">
+    <!-- Top Family & Wallet Header -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 parentportal-topbar">
+        <div class="card-body p-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <h3 class="fw-bold mb-1 text-dark">
+                    {{#str}}welcomeparent, local_parentportal, {{parentname}}{{/str}}
+                </h3>
+                <p class="text-muted mb-0 small">
+                    <i class="fa fa-school text-primary me-1"></i> {{#str}}familyoverview, local_parentportal{{/str}}
+                </p>
+            </div>
+
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <!-- Wallet Balance Badge -->
+                <div class="d-flex align-items-center gap-2 bg-light border border-light-subtle rounded-pill px-3 py-2">
+                    <div class="text-success"><i class="fa fa-wallet fa-lg"></i></div>
+                    <div>
+                        <span class="text-muted small d-block lh-1">{{#str}}walletbalance, local_parentportal{{/str}}</span>
+                        <strong class="fs-6 text-dark">{{walletbalance}} {{walletcurrency}}</strong>
+                    </div>
+                    <a href="{{config.wwwroot}}/enrol/wallet/pages/topup.php" class="btn btn-sm btn-success rounded-pill ms-2 px-2 py-0" title="{{#str}}topupwallet, local_parentportal{{/str}}">
+                        <i class="fa fa-plus"></i>
+                    </a>
+                </div>
+
+                <!-- Active Child Selector Dropdown -->
+                {{#haschildren}}
+                <div class="dropdown">
+                    <button class="btn btn-outline-primary rounded-pill dropdown-toggle d-flex align-items-center gap-2 px-3 py-2" type="button" id="childSwitcherDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa fa-user-circle"></i>
+                        <span class="fw-semibold">{{activechild.fullname}}</span>
+                        {{#activechild.gradelabel}}
+                        <span class="badge bg-primary-subtle text-primary rounded-pill small">{{activechild.gradelabel}}</span>
+                        {{/activechild.gradelabel}}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 mt-1" aria-labelledby="childSwitcherDropdown">
+                        <li><h6 class="dropdown-header small text-uppercase fw-bold">{{#str}}switchchild, local_parentportal{{/str}}</h6></li>
+                        {{#childrenlist}}
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center justify-content-between py-2 {{#isactive}}active fw-bold{{/isactive}}" href="{{config.wwwroot}}/local/parentportal/index.php?tab={{currenttab}}&childid={{childid}}">
+                                <span>{{fullname}}</span>
+                                {{#gradelabel}}
+                                <span class="badge {{#isactive}}bg-white text-primary{{/isactive}}{{^isactive}}bg-light text-muted border{{/isactive}} rounded-pill ms-2 small">{{gradelabel}}</span>
+                                {{/gradelabel}}
+                            </a>
+                        </li>
+                        {{/childrenlist}}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item small text-primary" href="#" data-bs-toggle="modal" data-bs-target="#addChildModal">
+                                <i class="fa fa-plus me-1"></i> {{#str}}addnewchild, local_parentportal{{/str}}
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item small text-secondary" href="#" data-bs-toggle="modal" data-bs-target="#linkChildModal">
+                                <i class="fa fa-link me-1"></i> {{#str}}linkchild, local_parentportal{{/str}}
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                {{/haschildren}}
+
+                {{^haschildren}}
+                <button type="button" class="btn btn-primary rounded-pill px-3 py-2 btn-sm" data-bs-toggle="modal" data-bs-target="#addChildModal">
+                    <i class="fa fa-plus me-1"></i> {{#str}}addnewchild, local_parentportal{{/str}}
+                </button>
+                {{/haschildren}}
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs Bar -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-2">
+            <ul class="nav nav-pills nav-fill parentportal-nav-pills gap-1" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link rounded-3 py-2 px-3 {{#is_tab_dashboard}}active{{/is_tab_dashboard}}" href="{{config.wwwroot}}/local/parentportal/index.php?tab=dashboard{{#activechild}}&childid={{childid}}{{/activechild}}">
+                        <i class="fa fa-home me-2"></i> {{#str}}tab_dashboard, local_parentportal{{/str}}
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link rounded-3 py-2 px-3 {{#is_tab_children}}active{{/is_tab_children}}" href="{{config.wwwroot}}/local/parentportal/index.php?tab=children{{#activechild}}&childid={{childid}}{{/activechild}}">
+                        <i class="fa fa-users me-2"></i> {{#str}}tab_children, local_parentportal{{/str}}
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link rounded-3 py-2 px-3 {{#is_tab_academics}}active{{/is_tab_academics}}" href="{{config.wwwroot}}/local/parentportal/index.php?tab=academics{{#activechild}}&childid={{childid}}{{/activechild}}">
+                        <i class="fa fa-graduation-cap me-2"></i> {{#str}}tab_academics, local_parentportal{{/str}}
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link rounded-3 py-2 px-3 {{#is_tab_finances}}active{{/is_tab_finances}}" href="{{config.wwwroot}}/local/parentportal/index.php?tab=finances{{#activechild}}&childid={{childid}}{{/activechild}}">
+                        <i class="fa fa-wallet me-2"></i> {{#str}}tab_finances, local_parentportal{{/str}}
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link rounded-3 py-2 px-3 {{#is_tab_messages}}active{{/is_tab_messages}}" href="{{config.wwwroot}}/local/parentportal/index.php?tab=messages{{#activechild}}&childid={{childid}}{{/activechild}}">
+                        <i class="fa fa-comments me-2"></i> {{#str}}tab_messages, local_parentportal{{/str}}
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Active Tab Content Area -->
+    <div class="parentportal-tab-body">
+        {{#is_tab_dashboard}}
+            {{> local_parentportal/tab_dashboard}}
+        {{/is_tab_dashboard}}
+
+        {{#is_tab_children}}
+            {{> local_parentportal/tab_children}}
+        {{/is_tab_children}}
+
+        {{#is_tab_academics}}
+            {{> local_parentportal/tab_academics}}
+        {{/is_tab_academics}}
+
+        {{#is_tab_finances}}
+            {{> local_parentportal/tab_finances}}
+        {{/is_tab_finances}}
+
+        {{#is_tab_messages}}
+            {{> local_parentportal/tab_messages}}
+        {{/is_tab_messages}}
+    </div>
+
+    <!-- Modal 1: Add New Child -->
+    <div class="modal fade" id="addChildModal" tabindex="-1" aria-labelledby="addChildModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header border-0 pb-0 pt-4 px-4">
+                    <h5 class="modal-title fw-bold" id="addChildModalLabel">
+                        <i class="fa fa-user-plus text-primary me-2"></i> {{#str}}addnewchild, local_parentportal{{/str}}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{#str}}close, local_parentportal{{/str}}"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="parentportal-modal-form-wrap">
+                        {{{addchildformhtml}}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: Link Existing Child -->
+    <div class="modal fade" id="linkChildModal" tabindex="-1" aria-labelledby="linkChildModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <form action="{{config.wwwroot}}/local/parentportal/index.php" method="post">
+                    <input type="hidden" name="action" value="linkchild">
+                    <input type="hidden" name="sesskey" value="{{sesskey}}">
+                    <input type="hidden" name="tab" value="{{currenttab}}">
+
+                    <div class="modal-header border-0 pb-0 pt-4 px-4">
+                        <h5 class="modal-title fw-bold" id="linkChildModalLabel">
+                            <i class="fa fa-link text-primary me-2"></i> {{#str}}linkchild, local_parentportal{{/str}}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{#str}}close, local_parentportal{{/str}}"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <p class="text-muted small mb-3">
+                            {{#str}}linkchild_desc, local_parentportal{{/str}}
+                        </p>
+                        <div class="mb-3">
+                            <label for="child_identifier" class="form-label fw-semibold small">{{#str}}childusernameoremail, local_parentportal{{/str}}</label>
+                            <input type="text" class="form-control rounded-3" id="child_identifier" name="identifier" required placeholder="e.g. omar or omar@example.com">
+                        </div>
+                        <div class="mb-3">
+                            <label for="child_password" class="form-label fw-semibold small">{{#str}}childpassword, local_parentportal{{/str}}</label>
+                            <input type="password" class="form-control rounded-3" id="child_password" name="password" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 pt-0 px-4 pb-4">
+                        <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">{{#str}}cancel, local_parentportal{{/str}}</button>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4">{{#str}}linkchild, local_parentportal{{/str}}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

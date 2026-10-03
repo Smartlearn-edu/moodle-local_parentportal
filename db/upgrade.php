@@ -134,5 +134,33 @@ function xmldb_local_parentportal_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2025042801, 'local', 'parentportal');
     }
 
+    if ($oldversion < 2026100302) {
+        // --- Table: local_parentportal_orders ---
+        $table = new xmldb_table('local_parentportal_orders');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('parentid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('childid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('courseid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('enrolinstanceid', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('amount', XMLDB_TYPE_NUMBER, '10, 2', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('currency', XMLDB_TYPE_CHAR, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('paymentmethod', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('status', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('parentid_fk', XMLDB_KEY_FOREIGN, ['parentid'], 'user', ['id']);
+        $table->add_key('childid_fk', XMLDB_KEY_FOREIGN, ['childid'], 'user', ['id']);
+        $table->add_key('courseid_fk', XMLDB_KEY_FOREIGN, ['courseid'], 'course', ['id']);
+
+        $table->add_index('parent_child_course_idx', XMLDB_INDEX_NOTUNIQUE, ['parentid', 'childid', 'courseid']);
+
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        upgrade_plugin_savepoint(true, 2026100302, 'local', 'parentportal');
+    }
+
     return true;
 }

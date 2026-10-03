@@ -1,0 +1,195 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+    Parent Portal - Dashboard Tab
+}}
+<div class="parentportal-tab-content parentportal-tab-dashboard">
+    {{#haschildren}}
+    {{#activechild}}
+    <!-- Active Child Banner & KPIs -->
+    <div class="card mb-4 border-0 shadow-sm rounded-4 overflow-hidden parentportal-hero-card">
+        <div class="card-body p-4">
+            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="parentportal-avatar-wrap">
+                        {{{avatar}}}
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <h3 class="mb-0 fw-bold text-dark">{{fullname}}</h3>
+                            {{#gradelabel}}
+                            <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1">{{gradelabel}}</span>
+                            {{/gradelabel}}
+                        </div>
+                        <p class="text-muted mb-0 small mt-1">
+                            <i class="fa fa-envelope me-1"></i>{{email}}
+                        </p>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <a href="{{config.wwwroot}}/local/parentportal/index.php?tab=academics&childid={{childid}}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                        <i class="fa fa-graduation-cap me-1"></i> {{#str}}tab_academics, local_parentportal{{/str}}
+                    </a>
+                    <a href="{{config.wwwroot}}/local/parentportal/index.php?tab=messages&childid={{childid}}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                        <i class="fa fa-comments me-1"></i> {{#str}}askteacher, local_parentportal{{/str}}
+                    </a>
+                    <a href="{{config.wwwroot}}/local/parentportal/studentcard.php?childid={{childid}}" class="btn btn-light btn-sm rounded-pill px-3 text-secondary border">
+                        <i class="fa fa-id-card me-1"></i> {{#str}}viewstudentcard, local_parentportal{{/str}}
+                    </a>
+                </div>
+            </div>
+
+            <!-- KPI Cards Grid -->
+            <div class="row g-3 mt-3">
+                <div class="col-6 col-lg-3">
+                    <div class="p-3 rounded-3 bg-light border border-light-subtle h-100">
+                        <div class="text-muted small fw-semibold text-uppercase tracking-wider">
+                            <i class="fa fa-book text-primary me-1"></i> {{#str}}kpi_enrolledcourses, local_parentportal{{/str}}
+                        </div>
+                        <div class="fs-3 fw-bold text-dark mt-2">{{activechildkpis.enrolled_courses}}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="p-3 rounded-3 bg-light border border-light-subtle h-100">
+                        <div class="text-muted small fw-semibold text-uppercase tracking-wider">
+                            <i class="fa fa-chart-line text-success me-1"></i> {{#str}}kpi_averagegrade, local_parentportal{{/str}}
+                        </div>
+                        <div class="fs-3 fw-bold text-dark mt-2">{{activechildkpis.avg_grade_str}}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="p-3 rounded-3 bg-light border border-light-subtle h-100">
+                        <div class="text-muted small fw-semibold text-uppercase tracking-wider">
+                            <i class="fa fa-calendar-check text-info me-1"></i> {{#str}}kpi_attendance, local_parentportal{{/str}}
+                        </div>
+                        <div class="fs-3 fw-bold text-dark mt-2">{{activechildkpis.attendance_str}}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="p-3 rounded-3 bg-light border border-light-subtle h-100">
+                        <div class="text-muted small fw-semibold text-uppercase tracking-wider">
+                            <i class="fa fa-clock text-warning me-1"></i> {{#str}}kpi_deadlines, local_parentportal{{/str}}
+                        </div>
+                        <div class="fs-3 fw-bold text-dark mt-2">{{activechildkpis.deadlines_count}}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{/activechild}}
+
+    <!-- Quick Shortcuts & Info -->
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4 pb-0 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="fa fa-bolt text-warning me-2"></i>{{#str}}quickactions, local_parentportal{{/str}}
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <a href="{{config.wwwroot}}/local/smartcatalog/index.php" class="p-3 d-flex align-items-center gap-3 rounded-3 border text-decoration-none text-dark bg-white hover-shadow transition">
+                                <div class="rounded-circle bg-primary-subtle text-primary p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                    <i class="fa fa-store fa-lg"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">{{#str}}browsecourses, local_parentportal{{/str}}</div>
+                                    <small class="text-muted">Explore courses for your child</small>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-sm-6">
+                            <a href="{{config.wwwroot}}/report/studentgrades/index.php?userid={{activechild.childid}}" class="p-3 d-flex align-items-center gap-3 rounded-3 border text-decoration-none text-dark bg-white hover-shadow transition">
+                                <div class="rounded-circle bg-success-subtle text-success p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                    <i class="fa fa-file-invoice fa-lg"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">{{#str}}viewgradebook, local_parentportal{{/str}}</div>
+                                    <small class="text-muted">Download complete grade transcript</small>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-sm-6">
+                            <a href="{{config.wwwroot}}/local/parentportal/index.php?tab=messages&childid={{activechild.childid}}" class="p-3 d-flex align-items-center gap-3 rounded-3 border text-decoration-none text-dark bg-white hover-shadow transition">
+                                <div class="rounded-circle bg-info-subtle text-info p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                    <i class="fa fa-comments fa-lg"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">{{#str}}askteacher, local_parentportal{{/str}}</div>
+                                    <small class="text-muted">Send inquiry regarding student</small>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-sm-6">
+                            <button type="button" class="p-3 d-flex align-items-center gap-3 rounded-3 border text-decoration-none text-dark bg-white hover-shadow transition w-100 text-start" data-bs-toggle="modal" data-bs-target="#addChildModal">
+                                <div class="rounded-circle bg-warning-subtle text-warning p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                    <i class="fa fa-user-plus fa-lg"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">{{#str}}addnewchild, local_parentportal{{/str}}</div>
+                                    <small class="text-muted">Register a new child account</small>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="fa fa-users text-primary me-2"></i>{{#str}}mychildren, local_parentportal{{/str}}
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="list-group list-group-flush">
+                        {{#childrenlist}}
+                        <a href="{{config.wwwroot}}/local/parentportal/index.php?tab=dashboard&childid={{childid}}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between px-0 py-2 border-bottom {{#isactive}}bg-light px-2 rounded-3{{/isactive}}">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="avatar-small">{{{avatarsmall}}}</div>
+                                <div>
+                                    <div class="fw-semibold text-dark">{{fullname}}</div>
+                                    <small class="text-muted">{{gradelabel}}</small>
+                                </div>
+                            </div>
+                            {{#isactive}}
+                            <span class="badge bg-primary rounded-pill small">{{#str}}activechild, local_parentportal{{/str}}</span>
+                            {{/isactive}}
+                            {{^isactive}}
+                            <span class="badge bg-light text-muted border small">{{#str}}switchchild, local_parentportal{{/str}}</span>
+                            {{/isactive}}
+                        </a>
+                        {{/childrenlist}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{/haschildren}}
+
+    {{^haschildren}}
+    <!-- Empty State -->
+    <div class="card border-0 shadow-sm rounded-4 p-5 text-center my-4">
+        <div class="my-4">
+            <div class="mx-auto rounded-circle bg-primary-subtle text-primary p-4 d-inline-flex align-items-center justify-content-center" style="width: 90px; height: 90px;">
+                <i class="fa fa-graduation-cap fa-3x"></i>
+            </div>
+            <h3 class="fw-bold mt-4 text-dark">{{#str}}familyoverview, local_parentportal{{/str}}</h3>
+            <p class="text-muted mx-auto" style="max-width: 520px;">
+                {{#str}}nochildren, local_parentportal{{/str}} Add your child or link their existing school account to monitor progress, pay for courses, and connect with teachers.
+            </p>
+            <div class="d-flex justify-content-center gap-3 mt-4">
+                <button type="button" class="btn btn-primary rounded-pill px-4 py-2" data-bs-toggle="modal" data-bs-target="#addChildModal">
+                    <i class="fa fa-plus me-1"></i> {{#str}}addnewchild, local_parentportal{{/str}}
+                </button>
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4 py-2" data-bs-toggle="modal" data-bs-target="#linkChildModal">
+                    <i class="fa fa-link me-1"></i> {{#str}}linkchild, local_parentportal{{/str}}
+                </button>
+            </div>
+        </div>
+    </div>
+    {{/haschildren}}
+</div>

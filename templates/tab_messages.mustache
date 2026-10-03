@@ -1,0 +1,198 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+    Parent Portal - Teacher Communication Hub (Phase 5)
+}}
+<div class="parentportal-tab-content parentportal-tab-messages">
+
+    {{#activechild}}
+    <!-- Header Banner -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-gradient-primary-subtle overflow-hidden">
+        <div class="card-body p-4 p-md-5 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-primary bg-opacity-10 text-primary p-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; font-size: 1.5rem;">
+                    <i class="fa fa-comments"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">{{#str}}teachers_directory, local_parentportal{{/str}}</h3>
+                    <p class="text-muted mb-0">
+                        {{#str}}teachers_directory_desc, local_parentportal, {{fullname}}{{/str}}
+                    </p>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2 fw-semibold">
+                    <i class="fa fa-chalkboard-teacher me-1"></i> {{teacherscount}} {{#str}}course_instructors, local_parentportal{{/str}}
+                </span>
+                <a href="{{config.wwwroot}}/message/index.php" class="btn btn-outline-primary rounded-pill px-3 py-2 text-nowrap" target="_blank" rel="noopener">
+                    <i class="fa fa-paper-plane me-1"></i> {{#str}}open_moodle_chat, local_parentportal{{/str}}
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Teachers Cards Grid -->
+    {{#haschildteachers}}
+    <div class="row g-4">
+        {{#childteachers}}
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-4 bg-white parentportal-teacher-card d-flex flex-column justify-content-between">
+                <div>
+                    <!-- Teacher Top Info -->
+                    <div class="d-flex align-items-start gap-3 mb-3">
+                        <div class="position-relative">
+                            <div class="rounded-circle overflow-hidden border border-2 border-white shadow-sm" style="width: 56px; height: 56px;">
+                                {{{avatar}}}
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 overflow-hidden">
+                            <h5 class="fw-bold text-dark mb-1 text-truncate" title="{{fullname}}">{{fullname}}</h5>
+                            <a href="mailto:{{email}}" class="text-muted small text-decoration-none d-block text-truncate" title="{{email}}">
+                                <i class="fa fa-envelope me-1"></i> {{email}}
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Courses Taught -->
+                    <div class="mb-4">
+                        <div class="text-muted small fw-semibold mb-2">
+                            <i class="fa fa-book me-1 text-primary"></i> {{#str}}courses_taught, local_parentportal{{/str}}:
+                        </div>
+                        <div class="d-flex flex-wrap gap-1">
+                            {{#courses}}
+                            <span class="badge bg-light text-dark border rounded-pill px-2 py-1 small fw-normal text-truncate" style="max-width: 100%;" title="{{fullname}}">
+                                {{fullname}}
+                            </span>
+                            {{/courses}}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex flex-column gap-2 pt-3 border-top">
+                    <button type="button" class="btn btn-primary rounded-pill w-100 fw-semibold d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal" data-bs-target="#inquiryModal_{{id}}">
+                        <i class="fa fa-paper-plane"></i> {{#str}}send_message, local_parentportal{{/str}}
+                    </button>
+
+                    <div class="d-flex gap-2">
+                        {{#hasphone}}
+                        <a href="{{whatsappurl}}" target="_blank" rel="noopener noreferrer" class="btn parentportal-whatsapp-btn rounded-pill flex-grow-1 d-flex align-items-center justify-content-center gap-2 btn-sm py-2">
+                            <i class="fa fa-whatsapp"></i> {{#str}}chat_whatsapp, local_parentportal{{/str}}
+                        </a>
+                        {{/hasphone}}
+
+                        <a href="{{moodlechat}}" class="btn btn-light border rounded-pill flex-grow-1 d-flex align-items-center justify-content-center gap-2 btn-sm py-2 text-dark" target="_blank" rel="noopener">
+                            <i class="fa fa-comments text-primary"></i> {{#str}}open_moodle_chat, local_parentportal{{/str}}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inquiry Modal for this Teacher -->
+        <div class="modal fade" id="inquiryModal_{{id}}" tabindex="-1" aria-labelledby="inquiryModalLabel_{{id}}" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content rounded-4 border-0 shadow">
+                    <div class="modal-header border-0 pb-0 pt-4 px-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle overflow-hidden shadow-sm" style="width: 44px; height: 44px;">
+                                {{{avatarsmall}}}
+                            </div>
+                            <div>
+                                <h5 class="modal-title fw-bold mb-0" id="inquiryModalLabel_{{id}}">{{#str}}contact_teacher, local_parentportal{{/str}}</h5>
+                                <small class="text-muted">{{fullname}}</small>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{#str}}close, local_parentportal{{/str}}"></button>
+                    </div>
+
+                    <form action="{{config.wwwroot}}/local/parentportal/index.php" method="post">
+                        <input type="hidden" name="sesskey" value="{{sesskey}}">
+                        <input type="hidden" name="action" value="sendinquiry">
+                        <input type="hidden" name="childid" value="{{activechild.childid}}">
+                        <input type="hidden" name="teacherid" value="{{id}}">
+
+                        <div class="modal-body p-4">
+                            <!-- Student Context Banner -->
+                            <div class="alert alert-light border rounded-3 p-3 mb-3 d-flex align-items-center gap-2">
+                                <i class="fa fa-user-graduate text-primary"></i>
+                                <span class="small text-muted">{{#str}}regarding_child, local_parentportal{{/str}}:</span>
+                                <strong class="small text-dark">{{activechild.fullname}}</strong>
+                            </div>
+
+                            <!-- Course Selection -->
+                            <div class="mb-3">
+                                <label for="courseSelect_{{id}}" class="form-label small fw-bold text-dark">{{#str}}select_course, local_parentportal{{/str}}</label>
+                                <select id="courseSelect_{{id}}" name="courseid" class="form-select rounded-3" required>
+                                    {{#courses}}
+                                    <option value="{{id}}">{{fullname}}</option>
+                                    {{/courses}}
+                                </select>
+                            </div>
+
+                            <!-- Subject Field -->
+                            <div class="mb-3">
+                                <label for="subject_{{id}}" class="form-label small fw-bold text-dark">{{#str}}subject, local_parentportal{{/str}}</label>
+                                <input type="text" id="subject_{{id}}" name="subject" class="form-control rounded-3" placeholder="{{#str}}subject_placeholder, local_parentportal{{/str}}" required>
+                            </div>
+
+                            <!-- Message Body -->
+                            <div class="mb-2">
+                                <label for="body_{{id}}" class="form-label small fw-bold text-dark">{{#str}}message_body, local_parentportal{{/str}}</label>
+                                <textarea id="body_{{id}}" name="body" class="form-control rounded-3" rows="4" placeholder="{{#str}}message_placeholder, local_parentportal{{/str}}" required></textarea>
+                            </div>
+
+                            <small class="text-muted d-block mt-2">
+                                <i class="fa fa-info-circle me-1"></i> {{#str}}inquiry_modal_desc, local_parentportal{{/str}}
+                            </small>
+                        </div>
+
+                        <div class="modal-footer border-0 pt-0 px-4 pb-4 d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">
+                                {{#str}}cancel, local_parentportal{{/str}}
+                            </button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold shadow-sm">
+                                <i class="fa fa-paper-plane me-1"></i> {{#str}}send_inquiry_btn, local_parentportal{{/str}}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {{/childteachers}}
+    </div>
+    {{/haschildteachers}}
+
+    <!-- Empty State -->
+    {{^haschildteachers}}
+    <div class="card border-0 shadow-sm rounded-4 p-5 text-center my-4 bg-white">
+        <div class="mx-auto rounded-circle bg-light text-muted p-4 d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+            <i class="fa fa-chalkboard-teacher fa-2x"></i>
+        </div>
+        <h4 class="fw-bold text-dark">{{#str}}no_teachers_found, local_parentportal{{/str}}</h4>
+        <p class="text-muted mx-auto mb-4" style="max-width: 480px;">
+            {{#str}}no_teachers_desc, local_parentportal{{/str}}
+        </p>
+        <div>
+            <a href="{{config.wwwroot}}/local/parentportal/index.php?tab=finances" class="btn btn-primary rounded-pill px-4 py-2">
+                <i class="fa fa-compass me-1"></i> {{#str}}explorecourses, local_parentportal{{/str}}
+            </a>
+        </div>
+    </div>
+    {{/haschildteachers}}
+
+    {{/activechild}}
+
+    {{^activechild}}
+    <div class="card border-0 shadow-sm rounded-4 p-5 text-center my-4 bg-white">
+        <div class="mx-auto rounded-circle bg-light text-muted p-4 d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+            <i class="fa fa-users fa-2x"></i>
+        </div>
+        <h4 class="fw-bold text-dark">{{#str}}nochildselected, local_parentportal{{/str}}</h4>
+        <p class="text-muted mx-auto" style="max-width: 450px;">
+            {{#str}}selectchilddesc, local_parentportal{{/str}}
+        </p>
+    </div>
+    {{/activechild}}
+
+</div>
