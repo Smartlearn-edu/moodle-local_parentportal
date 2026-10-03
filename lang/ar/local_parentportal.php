@@ -214,6 +214,7 @@ $string['absence_no_history'] = 'لا توجد إشعارات غياب سابق�
 $string['absence_status_submitted'] = 'قيد المراجعة';
 $string['absence_status_approved'] = 'مقبول';
 $string['absence_status_acknowledged'] = 'تم الاطلاع';
+$string['absence_status_rejected'] = 'مرفوض';
 $string['absence_course'] = 'المقرر المعني';
 $string['absence_all_courses'] = 'جميع المقررات (غياب يوم كامل)';
 

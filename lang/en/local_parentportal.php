@@ -211,6 +211,7 @@ $string['absence_no_history'] = 'No absence requests submitted.';
 $string['absence_status_submitted'] = 'Under review';
 $string['absence_status_approved'] = 'Approved';
 $string['absence_status_acknowledged'] = 'Acknowledged';
+$string['absence_status_rejected'] = 'Declined';
 $string['absence_course'] = 'Affected course';
 $string['absence_all_courses'] = 'All courses (Full day)';
 

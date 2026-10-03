@@ -1745,4 +1745,431 @@ class manager {
 
         return $results;
     }
+
+    /**
+     * Get courses instructed by a user (or all courses if admin).
+     *
+     * @param int $teacherid
+     * @return array [courseid => fullname]
+     */
+    public static function get_teacher_courses(int $teacherid): array {
+        global $DB;
+
+        if (is_siteadmin($teacherid)) {
+            return $DB->get_records_select_menu('course', 'id != :siteid', ['siteid' => SITEID], '', 'id, fullname');
+        }
+
+        $sql = "SELECT DISTINCT c.id, c.fullname
+                  FROM {course} c
+                  JOIN {context} ctx ON ctx.instanceid = c.id AND ctx.contextlevel = :courselevel
+                  JOIN {role_assignments} ra ON ra.contextid = ctx.id
+                  JOIN {role} r ON r.id = ra.roleid
+                 WHERE ra.userid = :teacherid
+                   AND r.shortname IN ('editingteacher', 'teacher', 'manager')
+                   AND c.id != :siteid";
+
+        return $DB->get_records_sql_menu($sql, [
+            'courselevel' => CONTEXT_COURSE,
+            'teacherid'   => $teacherid,
+            'siteid'      => SITEID,
+        ]);
+    }
+
+    /**
+     * Get absence excuse requests submitted for students in the teacher's courses.
+     *
+     * @param int $teacherid
+     * @param bool $onlypending
+     * @return array
+     */
+    public static function get_teacher_pending_excuses(int $teacherid, bool $onlypending = true): array {
+        global $DB, $OUTPUT;
+
+        if (!$DB->get_manager()->table_exists('local_parentportal_excuses')) {
+            return [];
+        }
+
+        $teachercourses = self::get_teacher_courses($teacherid);
+        if (empty($teachercourses) && !is_siteadmin($teacherid)) {
+            return [];
+        }
+
+        if (is_siteadmin($teacherid)) {
+            $whereclause = "1 = 1";
+            $params = [];
+        } else {
+            $courseids = array_keys($teachercourses);
+            [$incoursesql1, $incourseparams1] = !empty($courseids)
+                ? $DB->get_in_or_equal($courseids, SQL_PARAMS_NAMED, 'tc1')
+                : [' = 0', []];
+            [$incoursesql2, $incourseparams2] = !empty($courseids)
+                ? $DB->get_in_or_equal($courseids, SQL_PARAMS_NAMED, 'tc2')
+                : [' = 0', []];
+
+            $whereclause = "(
+                   e.courseid $incoursesql1
+                   OR (e.courseid = 0 AND EXISTS (
+                       SELECT 1 FROM {enrol} en
+                         JOIN {user_enrolments} ue ON ue.enrolid = en.id
+                        WHERE ue.userid = e.childid AND ue.status = 0
+                          AND en.courseid $incoursesql2
+                   ))
+            )";
+            $params = array_merge($incourseparams1, $incourseparams2);
+        }
+
+        $userfieldsapi = \core_user\fields::for_name()->with_userpic()->including('email', 'phone1');
+        $childselects = $userfieldsapi->get_sql('ch', false, 'child', '', false)->selects;
+        $parentselects = $userfieldsapi->get_sql('p', false, 'parent', '', false)->selects;
+
+        $sql = "SELECT e.*, c.fullname AS coursename,
+                       {$childselects},
+                       {$parentselects}
+                  FROM {local_parentportal_excuses} e
+             LEFT JOIN {course} c ON c.id = e.courseid
+                  JOIN {user} ch ON ch.id = e.childid AND ch.deleted = 0
+                  JOIN {user} p ON p.id = e.parentid AND p.deleted = 0
+                 WHERE $whereclause";
+
+        if ($onlypending) {
+            $sql .= " AND e.status = :status";
+            $params['status'] = 'submitted';
+        }
+
+        $sql .= " ORDER BY e.timecreated DESC";
+
+        $records = $DB->get_records_sql($sql, $params);
+        $results = [];
+
+        foreach ($records as $r) {
+            $badgeclass = 'bg-warning text-dark';
+            $statuslabel = get_string('absence_status_submitted', 'local_parentportal');
+            if ($r->status === 'approved') {
+                $badgeclass = 'bg-success text-white';
+                $statuslabel = get_string('absence_status_approved', 'local_parentportal');
+            } else if ($r->status === 'acknowledged') {
+                $badgeclass = 'bg-info text-white';
+                $statuslabel = get_string('absence_status_acknowledged', 'local_parentportal');
+            } else if ($r->status === 'rejected') {
+                $badgeclass = 'bg-danger text-white';
+                $statuslabel = get_string('absence_status_rejected', 'local_parentportal');
+            }
+
+            $reasonkey = 'absence_reason_' . $r->reason;
+            $reasonlabel = get_string_manager()->string_exists($reasonkey, 'local_parentportal')
+                ? get_string($reasonkey, 'local_parentportal')
+                : ucfirst($r->reason);
+
+            $coursename = get_string('absence_all_courses', 'local_parentportal');
+            if ($r->courseid > 0 && !empty($r->coursename)) {
+                $coursectx = \context_course::instance($r->courseid, IGNORE_MISSING);
+                $coursename = $coursectx ? format_string($r->coursename, true, ['context' => $coursectx]) : s($r->coursename);
+            }
+
+            $startf = userdate($r->startdate, get_string('strftimedate', 'langconfig'));
+            $endf   = userdate($r->enddate, get_string('strftimedate', 'langconfig'));
+            $datesf = ($r->startdate === $r->enddate) ? $startf : ($startf . ' - ' . $endf);
+
+            $childuser = (object)[
+                'id'                 => $r->childid,
+                'firstname'          => $r->childfirstname,
+                'lastname'           => $r->childlastname,
+                'firstnamephonetic'  => $r->childfirstnamephonetic ?? '',
+                'lastnamephonetic'   => $r->childlastnamephonetic ?? '',
+                'middlename'         => $r->childmiddlename ?? '',
+                'alternatename'      => $r->childalternatename ?? '',
+                'picture'            => $r->childpicture,
+                'imagealt'           => $r->childimagealt ?? '',
+                'email'              => $r->childemail,
+            ];
+            $parentuser = (object)[
+                'id'                 => $r->parentid,
+                'firstname'          => $r->parentfirstname,
+                'lastname'           => $r->parentlastname,
+                'firstnamephonetic'  => $r->parentfirstnamephonetic ?? '',
+                'lastnamephonetic'   => $r->parentlastnamephonetic ?? '',
+                'middlename'         => $r->parentmiddlename ?? '',
+                'alternatename'      => $r->parentalternatename ?? '',
+                'picture'            => $r->parentpicture,
+                'imagealt'           => $r->parentimagealt ?? '',
+                'email'              => $r->parentemail,
+            ];
+
+            $results[] = [
+                'id'          => (int)$r->id,
+                'childid'     => (int)$r->childid,
+                'childname'   => fullname($childuser),
+                'childemail'  => $r->childemail,
+                'childavatar' => $OUTPUT->user_picture($childuser, ['size' => 42, 'link' => false]),
+                'parentid'    => (int)$r->parentid,
+                'parentname'  => fullname($parentuser),
+                'parentemail' => $r->parentemail,
+                'parentphone' => $r->parentphone1 ?? '',
+                'courseid'    => (int)$r->courseid,
+                'coursename'  => $coursename,
+                'startdate_f' => $startf,
+                'enddate_f'   => $endf,
+                'dates_f'     => $datesf,
+                'reason'      => $r->reason,
+                'reasonlabel' => $reasonlabel,
+                'details'     => s($r->details),
+                'status'      => $r->status,
+                'statuslabel' => $statuslabel,
+                'badgeclass'  => $badgeclass,
+                'ispending'   => ($r->status === 'submitted'),
+                'isapproved'  => ($r->status === 'approved'),
+                'created_f'   => userdate($r->timecreated, get_string('strftimedate', 'langconfig')),
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
+     * Update status of an absence request (approve, acknowledge, reject) and notify parent.
+     *
+     * @param int $excuseid
+     * @param int $teacherid
+     * @param string $status
+     * @param string|null $note
+     * @return array
+     */
+    public static function update_excuse_status(int $excuseid, int $teacherid, string $status, ?string $note = null): array {
+        global $DB;
+
+        $validstatuses = ['approved', 'acknowledged', 'rejected'];
+        if (!in_array($status, $validstatuses, true)) {
+            return ['success' => false, 'message' => 'Invalid status'];
+        }
+
+        $excuse = $DB->get_record('local_parentportal_excuses', ['id' => $excuseid]);
+        if (!$excuse) {
+            return ['success' => false, 'message' => 'Excuse record not found'];
+        }
+
+        if (!is_siteadmin($teacherid)) {
+            $teachercourses = self::get_teacher_courses($teacherid);
+            $haspermission = false;
+            if ($excuse->courseid > 0 && isset($teachercourses[$excuse->courseid])) {
+                $haspermission = true;
+            } else if ($excuse->courseid == 0) {
+                $courseids = array_keys($teachercourses);
+                if (!empty($courseids)) {
+                    [$insql, $inparams] = $DB->get_in_or_equal($courseids);
+                    $haspermission = $DB->record_exists_sql("
+                        SELECT 1 FROM {enrol} en
+                          JOIN {user_enrolments} ue ON ue.enrolid = en.id
+                         WHERE ue.userid = ? AND ue.status = 0 AND en.courseid $insql",
+                        array_merge([$excuse->childid], $inparams)
+                    );
+                }
+            }
+            if (!$haspermission) {
+                return ['success' => false, 'message' => 'Unauthorized'];
+            }
+        }
+
+        $excuse->status = $status;
+        $excuse->timemodified = time();
+        $DB->update_record('local_parentportal_excuses', $excuse);
+
+        try {
+            $parent = $DB->get_record('user', ['id' => $excuse->parentid]);
+            $child = $DB->get_record('user', ['id' => $excuse->childid]);
+            $teacher = $DB->get_record('user', ['id' => $teacherid]);
+
+            if ($parent && $child && $teacher) {
+                $statusstr = get_string('absence_status_' . $status, 'local_parentportal');
+                $datesf = userdate($excuse->startdate, get_string('strftimedate', 'langconfig'));
+                if ($excuse->enddate > $excuse->startdate) {
+                    $datesf .= ' - ' . userdate($excuse->enddate, get_string('strftimedate', 'langconfig'));
+                }
+
+                $msgtext = "Absence notice for " . fullname($child) . " (" . $datesf . ") has been marked as: " . $statusstr . " by " . fullname($teacher) . ".";
+                if (!empty($note)) {
+                    $msgtext .= "\nTeacher Note: " . trim($note);
+                }
+
+                $message = new \core\message\message();
+                $message->component         = 'moodle';
+                $message->name              = 'instantmessage';
+                $message->userfrom          = $teacher;
+                $message->userto            = $parent;
+                $message->subject           = get_string('absence_request_title', 'local_parentportal') . ': ' . $statusstr;
+                $message->fullmessage       = $msgtext;
+                $message->fullmessageformat = FORMAT_MARKDOWN;
+                $message->fullmessagehtml   = '<p>' . nl2br(s($msgtext)) . '</p>';
+                $message->smallmessage      = $msgtext;
+                $message->notification      = 1;
+                message_send($message);
+            }
+        } catch (\Throwable $e) {
+            // Suppress notification errors.
+        }
+
+        return [
+            'success' => true,
+            'message' => 'Status updated successfully',
+            'status'  => $status,
+        ];
+    }
+
+    /**
+     * Get inquiries sent to a specific teacher.
+     *
+     * @param int $teacherid
+     * @param string|null $status
+     * @return array
+     */
+    public static function get_teacher_inquiries(int $teacherid, ?string $status = null): array {
+        global $DB, $OUTPUT;
+
+        if (!$DB->get_manager()->table_exists('local_parentportal_inquiries')) {
+            return [];
+        }
+
+        $params = ['teacherid' => $teacherid];
+        $sqlwhere = "i.teacherid = :teacherid";
+        if (!empty($status)) {
+            $sqlwhere .= " AND i.status = :status";
+            $params['status'] = $status;
+        }
+
+        $userfieldsapi = \core_user\fields::for_name()->with_userpic()->including('email');
+        $parentselects = $userfieldsapi->get_sql('p', false, 'parent', '', false)->selects;
+        $childselects = $userfieldsapi->get_sql('ch', false, 'child', '', false)->selects;
+
+        $sql = "SELECT i.*,
+                       c.fullname AS coursename,
+                       {$parentselects},
+                       {$childselects}
+                  FROM {local_parentportal_inquiries} i
+             LEFT JOIN {course} c ON c.id = i.courseid
+                  JOIN {user} p ON p.id = i.parentid AND p.deleted = 0
+                  JOIN {user} ch ON ch.id = i.childid AND ch.deleted = 0
+                 WHERE $sqlwhere
+              ORDER BY i.timecreated DESC";
+
+        $records = $DB->get_records_sql($sql, $params);
+        $results = [];
+
+        foreach ($records as $r) {
+            $coursecontext = $r->courseid > 0 ? \context_course::instance($r->courseid, IGNORE_MISSING) : \context_system::instance();
+
+            $parentuser = (object)[
+                'id'                 => $r->parentid,
+                'firstname'          => $r->parentfirstname,
+                'lastname'           => $r->parentlastname,
+                'firstnamephonetic'  => $r->parentfirstnamephonetic ?? '',
+                'lastnamephonetic'   => $r->parentlastnamephonetic ?? '',
+                'middlename'         => $r->parentmiddlename ?? '',
+                'alternatename'      => $r->parentalternatename ?? '',
+                'picture'            => $r->parentpicture,
+                'imagealt'           => $r->parentimagealt ?? '',
+                'email'              => $r->parentemail,
+            ];
+            $childuser = (object)[
+                'id'                 => $r->childid,
+                'firstname'          => $r->childfirstname,
+                'lastname'           => $r->childlastname,
+                'firstnamephonetic'  => $r->childfirstnamephonetic ?? '',
+                'lastnamephonetic'   => $r->childlastnamephonetic ?? '',
+                'middlename'         => $r->childmiddlename ?? '',
+                'alternatename'      => $r->childalternatename ?? '',
+                'picture'            => $r->childpicture,
+                'imagealt'           => $r->childimagealt ?? '',
+                'email'              => $r->childemail,
+            ];
+
+            $ispending = ($r->status === 'pending');
+            $statusbadge = $ispending ? 'bg-warning text-dark' : 'bg-success text-white';
+            $statuslabel = $ispending
+                ? get_string('inquiry_status_pending', 'local_parentportal')
+                : get_string('inquiry_status_replied', 'local_parentportal');
+
+            $results[] = [
+                'id'            => (int)$r->id,
+                'subject'       => $r->subject,
+                'body'          => nl2br(s($r->body)),
+                'status'        => $r->status,
+                'statusbadge'   => $statusbadge,
+                'statuslabel'   => $statuslabel,
+                'ispending'     => $ispending,
+                'hasreply'      => !empty($r->replybody),
+                'replybody'     => !empty($r->replybody) ? nl2br(s($r->replybody)) : null,
+                'coursename'    => format_string($r->coursename, true, ['context' => $coursecontext]),
+                'parentid'      => (int)$r->parentid,
+                'parentname'    => fullname($parentuser),
+                'parentavatar'  => $OUTPUT->user_picture($parentuser, ['size' => 42, 'link' => false]),
+                'childid'       => (int)$r->childid,
+                'childname'     => fullname($childuser),
+                'created_f'     => userdate($r->timecreated, get_string('strftimedatetime', 'langconfig')),
+                'replied_f'     => !empty($r->timereplied) ? userdate($r->timereplied, get_string('strftimedatetime', 'langconfig')) : null,
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
+     * Send teacher reply to parent inquiry.
+     *
+     * @param int $inquiryid
+     * @param int $teacherid
+     * @param string $replybody
+     * @return array
+     */
+    public static function reply_teacher_inquiry(int $inquiryid, int $teacherid, string $replybody): array {
+        global $DB;
+
+        $inquiry = $DB->get_record('local_parentportal_inquiries', ['id' => $inquiryid]);
+        if (!$inquiry) {
+            return ['success' => false, 'message' => 'Inquiry not found'];
+        }
+
+        if ($inquiry->teacherid != $teacherid && !is_siteadmin($teacherid)) {
+            return ['success' => false, 'message' => 'Unauthorized'];
+        }
+
+        $replytext = trim($replybody);
+        if (empty($replytext)) {
+            return ['success' => false, 'message' => 'Reply cannot be empty'];
+        }
+
+        $inquiry->status      = 'replied';
+        $inquiry->replybody   = $replytext;
+        $inquiry->timereplied = time();
+        $DB->update_record('local_parentportal_inquiries', $inquiry);
+
+        try {
+            $parent = $DB->get_record('user', ['id' => $inquiry->parentid]);
+            $teacher = $DB->get_record('user', ['id' => $teacherid]);
+            $child = $DB->get_record('user', ['id' => $inquiry->childid]);
+
+            if ($parent && $teacher) {
+                $childname = $child ? fullname($child) : 'student';
+                $msgtext = "Teacher " . fullname($teacher) . " replied to your inquiry regarding " . $childname . ":\n\n" . $replytext;
+                $message = new \core\message\message();
+                $message->component         = 'moodle';
+                $message->name              = 'instantmessage';
+                $message->userfrom          = $teacher;
+                $message->userto            = $parent;
+                $message->subject           = "Reply from " . fullname($teacher) . ": " . $inquiry->subject;
+                $message->fullmessage       = $msgtext;
+                $message->fullmessageformat = FORMAT_MARKDOWN;
+                $message->fullmessagehtml   = '<p>' . nl2br(s($msgtext)) . '</p>';
+                $message->smallmessage      = $msgtext;
+                $message->notification      = 1;
+                message_send($message);
+            }
+        } catch (\Throwable $e) {
+            // Suppress notification errors.
+        }
+
+        return [
+            'success'   => true,
+            'message'   => 'Reply sent successfully',
+            'replybody' => nl2br(s($replytext)),
+        ];
+    }
 }
