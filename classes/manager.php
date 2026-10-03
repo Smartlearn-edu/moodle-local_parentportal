@@ -60,7 +60,7 @@ class manager {
         $user->auth         = 'manual';
         $user->confirmed    = 1;
         $user->mnethostid   = $CFG->mnet_localhost_id;
-        $user->country      = $data->country ?? '';
+        $user->country      = $data->country ?? ($CFG->country ?? '');
         $user->timezone     = $data->timezone ?? '99';
         $user->lang         = $CFG->lang;
 
@@ -76,7 +76,7 @@ class manager {
         $record->childid     = $user->id;
         $record->sex         = $data->sex;
         $record->grade       = $data->grade;
-        $record->curriculum  = $data->curriculum;
+        $record->curriculum  = $data->curriculum ?? '';
         $record->timecreated = time();
 
         $DB->insert_record('local_parentportal_children', $record);
@@ -224,10 +224,13 @@ class manager {
     /**
      * Get curriculum display label from curriculum key.
      *
-     * @param string $curriculumkey The curriculum key.
+     * @param ?string $curriculumkey The curriculum key.
      * @return string The human readable curriculum label.
      */
-    public static function get_curriculum_label(string $curriculumkey): string {
+    public static function get_curriculum_label(?string $curriculumkey): string {
+        if (empty($curriculumkey)) {
+            return '';
+        }
         $curricula = self::get_curriculum_options();
         return $curricula[$curriculumkey] ?? $curriculumkey;
     }

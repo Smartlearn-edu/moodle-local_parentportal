@@ -80,14 +80,6 @@ class add_child_form extends \moodleform {
             'optional'  => false,
         ]);
 
-        // --- Location & Academic ---
-        $mform->addElement('header', 'locationacademic', get_string('country', 'local_parentportal'));
-
-        // Country.
-        $countries = array_merge(['' => get_string('choosedots')], get_string_manager()->get_list_of_countries());
-        $mform->addElement('select', 'country', get_string('country', 'local_parentportal'), $countries);
-        $mform->addRule('country', get_string('required'), 'required', null, 'client');
-
         // Timezone.
         $timezones = \core_date::get_list_of_timezones(null, true);
         $mform->addElement('select', 'timezone', get_string('timezone', 'local_parentportal'), $timezones);
@@ -97,11 +89,6 @@ class add_child_form extends \moodleform {
         $gradeoptions = array_merge(['' => get_string('choosedots')], manager::get_grade_options());
         $mform->addElement('select', 'grade', get_string('grade', 'local_parentportal'), $gradeoptions);
         $mform->addRule('grade', get_string('required'), 'required', null, 'client');
-
-        // Curriculum.
-        $curricula = array_merge(['' => get_string('choosedots')], manager::get_curriculum_options());
-        $mform->addElement('select', 'curriculum', get_string('curriculum', 'local_parentportal'), $curricula);
-        $mform->addRule('curriculum', get_string('required'), 'required', null, 'client');
 
         // --- Photo ---
         $mform->addElement('header', 'photosection', get_string('personalphoto', 'local_parentportal'));
@@ -151,11 +138,6 @@ class add_child_form extends \moodleform {
         // Validate grade selection.
         if (empty($data['grade'])) {
             $errors['grade'] = get_string('required');
-        }
-
-        // Validate curriculum selection.
-        if (empty($data['curriculum'])) {
-            $errors['curriculum'] = get_string('required');
         }
 
         return $errors;
