@@ -33,6 +33,9 @@ $childid = required_param('childid', PARAM_INT);
 $context  = context_system::instance();
 $parentid = $USER->id;
 
+$PAGE->set_context($context);
+$PAGE->set_url(new moodle_url('/local/parentportal/studentcard.php', ['childid' => $childid]));
+
 // Verify ownership.
 if (!studentcard::verify_ownership($childid, $parentid)) {
     throw new moodle_exception('error_noaccess', 'local_parentportal');
@@ -42,8 +45,6 @@ if (!studentcard::verify_ownership($childid, $parentid)) {
 $childuser = $DB->get_record('user', ['id' => $childid], '*', MUST_EXIST);
 $fullname  = fullname($childuser);
 
-$PAGE->set_context($context);
-$PAGE->set_url(new moodle_url('/local/parentportal/studentcard.php', ['childid' => $childid]));
 $PAGE->set_title(get_string('studentcardfor', 'local_parentportal', $fullname));
 $PAGE->set_heading(get_string('studentcardfor', 'local_parentportal', $fullname));
 $PAGE->set_pagelayout('standard');

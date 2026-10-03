@@ -51,6 +51,14 @@ if (!in_array($tab, $validtabs)) {
 $childidparam = optional_param('childid', 0, PARAM_INT);
 $action = optional_param('action', '', PARAM_ALPHANUMEXT);
 
+// ── Early Page Setup (Required by Moodle before form processing, formatting, or redirects) ──
+$pageparams = ['tab' => $tab];
+if ($childidparam > 0) {
+    $pageparams['childid'] = $childidparam;
+}
+$PAGE->set_context($context);
+$PAGE->set_url(new moodle_url('/local/parentportal/index.php', $pageparams));
+
 // ── Action: Link Existing Child ──────────────────────────────────────────────
 if ($action === 'linkchild' && data_submitted() && confirm_sesskey()) {
     $identifier = required_param('identifier', PARAM_RAW);
@@ -222,9 +230,7 @@ ob_start();
 $addform->display();
 $addchildformhtml = ob_get_clean();
 
-// ── Page Setup ───────────────────────────────────────────────────────────────
-$PAGE->set_context($context);
-$PAGE->set_url(new moodle_url('/local/parentportal/index.php', ['tab' => $tab]));
+// ── Page Presentation ───────────────────────────────────────────────────────
 $PAGE->set_title(get_string('pagetitle', 'local_parentportal'));
 $PAGE->set_heading(get_string('pagetitle', 'local_parentportal'));
 $PAGE->set_pagelayout('standard');

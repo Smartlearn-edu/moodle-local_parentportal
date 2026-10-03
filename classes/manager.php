@@ -161,8 +161,11 @@ class manager {
     public static function get_children(int $parentid): array {
         global $DB, $OUTPUT;
 
+        $userfieldsapi = \core_user\fields::for_name()->with_userpic()->including('email');
+        $userselects = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
+
         $sql = "SELECT c.id, c.childid, c.sex, c.grade, c.curriculum, c.timecreated,
-                       u.firstname, u.lastname, u.email, u.picture, u.imagealt
+                       {$userselects}
                   FROM {local_parentportal_children} c
                   JOIN {user} u ON u.id = c.childid
                  WHERE c.parentid = :parentid
@@ -173,20 +176,12 @@ class manager {
         $children = [];
 
         foreach ($records as $r) {
-            $childuser = (object)[
-                'id'        => $r->childid,
-                'picture'   => $r->picture,
-                'firstname' => $r->firstname,
-                'lastname'  => $r->lastname,
-                'imagealt'  => $r->imagealt ?? '',
-                'email'     => $r->email,
-            ];
-
-            $r->fullname = fullname($childuser);
+            $r->id = $r->childid; // Ensure user picture/fullname can use user id directly.
+            $r->fullname = fullname($r);
             $r->gradelabel = !empty($r->grade) ? self::get_grade_label($r->grade) : '';
             $r->dateadded = userdate($r->timecreated, get_string('strftimedate', 'langconfig'));
-            $r->avatar = $OUTPUT->user_picture($childuser, ['size' => 60, 'link' => false]);
-            $r->avatarsmall = $OUTPUT->user_picture($childuser, ['size' => 32, 'link' => false]);
+            $r->avatar = $OUTPUT->user_picture($r, ['size' => 60, 'link' => false]);
+            $r->avatarsmall = $OUTPUT->user_picture($r, ['size' => 32, 'link' => false]);
 
             // Enrolled courses count.
             $sqlcourses = "SELECT COUNT(DISTINCT c.id)
@@ -559,7 +554,8 @@ class manager {
 
             // Teachers.
             $coursecontext = \context_course::instance($r->id);
-            $teacherfields = 'u.id, u.firstname, u.lastname, u.email, u.picture, u.imagealt, u.phone1, u.phone2';
+            $userfieldsapi = \core_user\fields::for_name()->with_userpic()->including('email', 'phone1', 'phone2');
+            $teacherfields = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
             $teachersraw = get_enrolled_users($coursecontext, 'moodle/course:update', 0, $teacherfields, 'u.lastname, u.firstname', 0, 5);
             if (empty($teachersraw)) {
                 $teachersraw = get_enrolled_users($coursecontext, 'moodle/grade:viewall', 0, $teacherfields, 'u.lastname, u.firstname', 0, 5);
@@ -589,9 +585,9 @@ class manager {
                 ];
             }
 
-            $r->fullname = format_string($r->fullname);
-            $r->shortname = format_string($r->shortname);
-            $r->categoryname = format_string($r->categoryname);
+            $r->fullname = format_string($r->fullname, true, ['context' => $coursecontext]);
+            $r->shortname = format_string($r->shortname, true, ['context' => $coursecontext]);
+            $r->categoryname = format_string($r->categoryname, true, ['context' => $coursecontext]);
             $r->courseimage = $courseimage;
             $r->hasimage = !empty($courseimage);
             $r->progress = $progress;
@@ -662,11 +658,12 @@ class manager {
 
             $timeleft = $e->timestart - $now;
             $isurgent = ($timeleft <= 172800); // 48 hours or less.
+            $eventcontext = (!empty($e->courseid) && $e->courseid != SITEID) ? \context_course::instance($e->courseid) : \context_system::instance();
 
             $formatted[] = [
                 'id'            => $e->id,
-                'name'          => format_string($e->name),
-                'coursename'    => !empty($e->coursename) ? format_string($e->coursename) : '',
+                'name'          => format_string($e->name, true, ['context' => $eventcontext]),
+                'coursename'    => !empty($e->coursename) ? format_string($e->coursename, true, ['context' => $eventcontext]) : '',
                 'courseid'      => $e->courseid,
                 'modulename'    => $e->modulename,
                 'icon'          => $icon,
@@ -890,21 +887,26 @@ class manager {
             return [];
         }
 
+        $userfieldsapi = \core_user\fields::for_name()->with_userpic()->including('email');
+        $childfields = $userfieldsapi->get_sql('', false, '', '', false)->selects;
+
         $items = [];
         $index = 0;
         foreach ($SESSION->parentportal_cart as $entry) {
             $course = $DB->get_record('course', ['id' => $entry['courseid']], 'id, fullname, shortname');
-            $child = $DB->get_record('user', ['id' => $entry['childid']], 'id, firstname, lastname, picture, imagealt, email');
+            $child = $DB->get_record('user', ['id' => $entry['childid']], $childfields);
 
             if (!$course || !$child) {
                 continue;
             }
 
+            $coursecontext = \context_course::instance($course->id);
+
             $items[] = [
                 'index'           => $index,
                 'courseid'        => $course->id,
-                'coursename'      => format_string($course->fullname),
-                'courseshortname' => format_string($course->shortname),
+                'coursename'      => format_string($course->fullname, true, ['context' => $coursecontext]),
+                'courseshortname' => format_string($course->shortname, true, ['context' => $coursecontext]),
                 'childid'         => $child->id,
                 'childname'       => fullname($child),
                 'childavatar'     => $OUTPUT->user_picture($child, ['size' => 28, 'link' => false]),
@@ -967,9 +969,10 @@ class manager {
         ]);
 
         if ($isenrolled > 0) {
+            $coursecontext = \context_course::instance($course->id);
             $a = (object)[
                 'child'  => fullname($child),
-                'course' => format_string($course->fullname),
+                'course' => format_string($course->fullname, true, ['context' => $coursecontext]),
             ];
             return [
                 'success' => false,
@@ -1004,9 +1007,10 @@ class manager {
             'timeadded'       => time(),
         ];
 
+        $coursecontext = \context_course::instance($course->id);
         $a = (object)[
             'child'  => fullname($child),
-            'course' => format_string($course->fullname),
+            'course' => format_string($course->fullname, true, ['context' => $coursecontext]),
         ];
 
         return [
@@ -1220,10 +1224,11 @@ class manager {
             return [];
         }
 
+        $namefields = \core_user\fields::for_name()->get_sql('u', false, '', '', false)->selects;
         $sql = "SELECT o.id, o.parentid, o.childid, o.courseid, o.amount, o.currency,
                        o.paymentmethod, o.status, o.timecreated,
                        c.fullname AS coursename,
-                       u.firstname AS childfirstname, u.lastname AS childlastname
+                       {$namefields}
                   FROM {local_parentportal_orders} o
                   JOIN {course} c ON c.id = o.courseid
                   JOIN {user} u ON u.id = o.childid
@@ -1234,8 +1239,9 @@ class manager {
         $orders = [];
 
         foreach ($records as $r) {
-            $r->coursename = format_string($r->coursename);
-            $r->childname  = fullname((object)['firstname' => $r->childfirstname, 'lastname' => $r->childlastname]);
+            $coursecontext = \context_course::instance($r->courseid);
+            $r->coursename = format_string($r->coursename, true, ['context' => $coursecontext]);
+            $r->childname  = fullname($r);
             $r->formattedamount = number_format((float)$r->amount, 2) . ' ' . $r->currency;
             $r->formatteddate   = userdate($r->timecreated, get_string('strftimedate', 'langconfig'));
             $r->statusbadge     = ($r->status === 'completed') ? 'bg-success' : 'bg-secondary';
@@ -1289,7 +1295,8 @@ class manager {
             return [];
         }
 
-        $teacherfields = 'u.id, u.firstname, u.lastname, u.email, u.picture, u.imagealt, u.phone1, u.phone2';
+        $userfieldsapi = \core_user\fields::for_name()->with_userpic()->including('email', 'phone1', 'phone2');
+        $teacherfields = $userfieldsapi->get_sql('u', false, '', '', false)->selects;
         $teachersbyid = [];
 
         foreach ($courses as $c) {
@@ -1320,10 +1327,11 @@ class manager {
                     ];
                 }
 
+                $coursecontext = \context_course::instance($c->id);
                 $teachersbyid[$t->id]->courses[] = [
                     'id'        => $c->id,
-                    'fullname'  => format_string($c->fullname),
-                    'shortname' => format_string($c->shortname),
+                    'fullname'  => format_string($c->fullname, true, ['context' => $coursecontext]),
+                    'shortname' => format_string($c->shortname, true, ['context' => $coursecontext]),
                 ];
             }
         }
@@ -1376,7 +1384,8 @@ class manager {
         $course = $DB->get_record('course', ['id' => $courseid]);
 
         $childname = fullname($child);
-        $coursename = $course ? format_string($course->fullname) : '';
+        $coursecontext = $course ? \context_course::instance($course->id) : \context_system::instance();
+        $coursename = $course ? format_string($course->fullname, true, ['context' => $coursecontext]) : '';
 
         // Prepare message header and body.
         $header = "📢 **[" . get_string('pluginname', 'local_parentportal') . "]**\n"
