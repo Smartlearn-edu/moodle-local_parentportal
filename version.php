@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component  = 'local_parentportal';
-$plugin->version    = 2026100303;
+$plugin->version    = 2026100304;
 $plugin->requires   = 2022112800; // Moodle 4.1+.
 $plugin->maturity   = MATURITY_STABLE;
-$plugin->release    = '2.1.0';
+$plugin->release    = '2.2.0';

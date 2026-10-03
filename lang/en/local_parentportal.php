@@ -178,6 +178,48 @@ $string['error_notparent'] = 'You are not authorized to perform actions for this
 $string['error_invalidteacher'] = 'The selected teacher could not be found.';
 $string['courses_taught'] = 'Courses taught';
 
+// Inquiries History (Tab 5).
+$string['inquiry_history_title'] = 'Inquiry & Feedback History';
+$string['inquiry_history_desc'] = 'Record of sent inquiries and teacher replies.';
+$string['inquiry_status_pending'] = 'Awaiting reply';
+$string['inquiry_status_replied'] = 'Replied';
+$string['inquiry_status_closed'] = 'Closed';
+$string['inquiry_no_history'] = 'No inquiries sent yet.';
+$string['inquiry_sent_on'] = 'Sent on {$a}';
+$string['inquiry_replied_on'] = 'Replied on {$a}';
+$string['teacher_reply'] = 'Teacher reply';
+$string['view_inquiry'] = 'View details';
+
+// Absence & Excuse Requests (Tab 3).
+$string['absence_request_title'] = 'Absence & Excuse Requests';
+$string['submit_absence_btn'] = 'Submit Absence Request';
+$string['absence_modal_title'] = 'Submit absence notice';
+$string['absence_modal_desc'] = 'Notify the school and course teachers of an excused absence for your child.';
+$string['absence_startdate'] = 'Start date';
+$string['absence_enddate'] = 'End date';
+$string['absence_reason'] = 'Reason';
+$string['absence_reason_medical'] = 'Illness / Medical';
+$string['absence_reason_family'] = 'Family Emergency';
+$string['absence_reason_travel'] = 'Authorized Travel';
+$string['absence_reason_appointment'] = 'Official Appointment';
+$string['absence_reason_other'] = 'Other';
+$string['absence_details'] = 'Details / Note';
+$string['absence_details_placeholder'] = 'Explain the reason for absence...';
+$string['absence_submitted_success'] = 'Absence request submitted successfully.';
+$string['absence_history_title'] = 'Previous Absence Notices';
+$string['absence_no_history'] = 'No absence requests submitted.';
+$string['absence_status_submitted'] = 'Under review';
+$string['absence_status_approved'] = 'Approved';
+$string['absence_status_acknowledged'] = 'Acknowledged';
+$string['absence_course'] = 'Affected course';
+$string['absence_all_courses'] = 'All courses (Full day)';
+
+// Catalog Quick Buy.
+$string['buy_for_child'] = 'Buy for Child';
+$string['select_children_to_enroll'] = 'Select children to enroll';
+$string['already_enrolled'] = 'Already enrolled';
+$string['in_cart'] = 'In cart';
+
 // Form fields - add child.
 $string['firstname'] = 'First name';
 $string['lastname'] = 'Last name';

@@ -1423,6 +1423,23 @@ class manager {
             $messageid = message_send($eventdata);
 
             if ($messageid) {
+                // Record in inquiries log table if present.
+                if ($DB->get_manager()->table_exists('local_parentportal_inquiries')) {
+                    $inquiry = new \stdClass();
+                    $inquiry->parentid    = $parentid;
+                    $inquiry->childid     = $childid;
+                    $inquiry->courseid    = $courseid;
+                    $inquiry->teacherid   = $teacherid;
+                    $inquiry->messageid   = (int)$messageid;
+                    $inquiry->subject     = !empty($subject) ? trim($subject) : get_string('messages_title', 'local_parentportal');
+                    $inquiry->body        = trim($body);
+                    $inquiry->status      = 'pending';
+                    $inquiry->replybody   = null;
+                    $inquiry->timecreated = time();
+                    $inquiry->timereplied = 0;
+                    $DB->insert_record('local_parentportal_inquiries', $inquiry);
+                }
+
                 return [
                     'success'   => true,
                     'message'   => get_string('message_sent_success', 'local_parentportal', fullname($teacher)),
@@ -1440,5 +1457,292 @@ class manager {
                 'message' => $e->getMessage(),
             ];
         }
+    }
+
+    /**
+     * Get inquiries history sent by a parent.
+     *
+     * @param int $parentid The parent user ID.
+     * @param int|null $childid Optional child ID filter.
+     * @return array Enriched inquiries list.
+     */
+    public static function get_parent_inquiries(int $parentid, ?int $childid = null): array {
+        global $DB, $OUTPUT;
+
+        if (!$DB->get_manager()->table_exists('local_parentportal_inquiries')) {
+            return [];
+        }
+
+        $params = ['parentid' => $parentid];
+        $sqlwhere = "i.parentid = :parentid";
+        if ($childid > 0) {
+            $sqlwhere .= " AND i.childid = :childid";
+            $params['childid'] = $childid;
+        }
+
+        $userfieldsapi = \core_user\fields::for_name()->with_userpic()->including('email');
+        $teacherselects = $userfieldsapi->get_sql('t', false, 'teacher', '', false)->selects;
+        $childselects = $userfieldsapi->get_sql('ch', false, 'child', '', false)->selects;
+
+        $sql = "SELECT i.*,
+                       c.fullname AS coursename,
+                       {$teacherselects},
+                       {$childselects}
+                  FROM {local_parentportal_inquiries} i
+                  JOIN {course} c ON c.id = i.courseid
+                  JOIN {user} t ON t.id = i.teacherid
+                  JOIN {user} ch ON ch.id = i.childid
+                 WHERE {$sqlwhere}
+              ORDER BY i.timecreated DESC";
+
+        $records = $DB->get_records_sql($sql, $params);
+        $inquiries = [];
+
+        foreach ($records as $r) {
+            $coursecontext = \context_course::instance($r->courseid);
+            $teacheruser = (object)[
+                'id'                 => $r->teacherid,
+                'firstname'          => $r->teacherfirstname,
+                'lastname'           => $r->teacherlastname,
+                'firstnamephonetic'  => $r->teacherfirstnamephonetic ?? '',
+                'lastnamephonetic'   => $r->teacherlastnamephonetic ?? '',
+                'middlename'         => $r->teachermiddlename ?? '',
+                'alternatename'      => $r->teacheralternatename ?? '',
+                'picture'            => $r->teacherpicture,
+                'imagealt'           => $r->teacherimagealt ?? '',
+                'email'              => $r->teacheremail,
+            ];
+            $childuser = (object)[
+                'id'                 => $r->childid,
+                'firstname'          => $r->childfirstname,
+                'lastname'           => $r->childlastname,
+                'firstnamephonetic'  => $r->childfirstnamephonetic ?? '',
+                'lastnamephonetic'   => $r->childlastnamephonetic ?? '',
+                'middlename'         => $r->childmiddlename ?? '',
+                'alternatename'      => $r->childalternatename ?? '',
+                'picture'            => $r->childpicture,
+                'imagealt'           => $r->childimagealt ?? '',
+                'email'              => $r->childemail,
+            ];
+
+            $ispending = ($r->status === 'pending');
+            $isreplied = ($r->status === 'replied');
+
+            $statusbadge = 'bg-secondary';
+            $statuslabel = get_string('inquiry_status_closed', 'local_parentportal');
+            if ($ispending) {
+                $statusbadge = 'bg-warning text-dark';
+                $statuslabel = get_string('inquiry_status_pending', 'local_parentportal');
+            } else if ($isreplied) {
+                $statusbadge = 'bg-success';
+                $statuslabel = get_string('inquiry_status_replied', 'local_parentportal');
+            }
+
+            $inquiries[] = [
+                'id'              => $r->id,
+                'subject'         => $r->subject,
+                'body'            => nl2br(s($r->body)),
+                'status'          => $r->status,
+                'statusbadge'     => $statusbadge,
+                'statuslabel'     => $statuslabel,
+                'ispending'       => $ispending,
+                'isreplied'       => $isreplied,
+                'hasreply'        => !empty($r->replybody),
+                'replybody'       => !empty($r->replybody) ? nl2br(s($r->replybody)) : null,
+                'coursename'      => format_string($r->coursename, true, ['context' => $coursecontext]),
+                'teacherid'       => $r->teacherid,
+                'teachername'     => fullname($teacheruser),
+                'teacheravatar'   => $OUTPUT->user_picture($teacheruser, ['size' => 32, 'link' => false]),
+                'childid'         => $r->childid,
+                'childname'       => fullname($childuser),
+                'formatteddate'   => userdate($r->timecreated, get_string('strftimedatetime', 'langconfig')),
+                'formattedreplydate' => !empty($r->timereplied) ? userdate($r->timereplied, get_string('strftimedatetime', 'langconfig')) : null,
+            ];
+        }
+
+        return $inquiries;
+    }
+
+    /**
+     * Submit a formal absence excuse note for a child.
+     *
+     * @param int $parentid The parent user ID.
+     * @param int $childid The child user ID.
+     * @param int $courseid The course ID (0 for all courses / general absence).
+     * @param int $startdate Start timestamp.
+     * @param int $enddate End timestamp.
+     * @param string $reason Reason code (medical, family, travel, appointment, other).
+     * @param string $details Additional notes / details.
+     * @return array Result with 'success', 'message', and 'excuseid'.
+     */
+    public static function submit_absence_excuse(
+        int $parentid,
+        int $childid,
+        int $courseid,
+        int $startdate,
+        int $enddate,
+        string $reason,
+        string $details
+    ): array {
+        global $DB;
+
+        if (!self::is_parent_of($parentid, $childid)) {
+            return [
+                'success' => false,
+                'message' => get_string('error_noaccess', 'local_parentportal'),
+            ];
+        }
+
+        if ($startdate <= 0) {
+            $startdate = time();
+        }
+        if ($enddate <= 0 || $enddate < $startdate) {
+            $enddate = $startdate;
+        }
+
+        $validreasons = ['medical', 'family', 'travel', 'appointment', 'other'];
+        $cleanreason = in_array($reason, $validreasons, true) ? $reason : 'other';
+
+        $record = new \stdClass();
+        $record->parentid     = $parentid;
+        $record->childid      = $childid;
+        $record->courseid     = $courseid;
+        $record->startdate    = $startdate;
+        $record->enddate      = $enddate;
+        $record->reason       = $cleanreason;
+        $record->details      = trim($details);
+        $record->status       = 'submitted';
+        $record->timecreated  = time();
+        $record->timemodified = time();
+
+        $excuseid = $DB->insert_record('local_parentportal_excuses', $record);
+
+        // Optionally send a notification message to teacher(s).
+        try {
+            $child = $DB->get_record('user', ['id' => $childid], '*', MUST_EXIST);
+            $parent = $DB->get_record('user', ['id' => $parentid], '*', MUST_EXIST);
+            $teachers = [];
+            if ($courseid > 0) {
+                $teachers = self::get_course_teachers($courseid);
+            } else {
+                $childcourses = self::get_child_courses_progress($childid);
+                foreach ($childcourses as $cc) {
+                    $cts = self::get_course_teachers($cc->id);
+                    foreach ($cts as $t) {
+                        $teachers[$t->id] = $t;
+                    }
+                }
+            }
+
+            $reasonkey = 'absence_reason_' . $cleanreason;
+            $reasonstr = get_string_manager()->string_exists($reasonkey, 'local_parentportal')
+                ? get_string($reasonkey, 'local_parentportal')
+                : ucfirst($cleanreason);
+
+            $startstr = userdate($startdate, get_string('strftimedate', 'langconfig'));
+            $endstr = userdate($enddate, get_string('strftimedate', 'langconfig'));
+
+            $childname = fullname($child);
+            $msgtext = "Absence notice submitted for {$childname}.\nReason: {$reasonstr}\nDates: {$startstr} to {$endstr}\nNote: {$record->details}";
+
+            foreach ($teachers as $teacher) {
+                $message = new \core\message\message();
+                $message->component         = 'moodle';
+                $message->name              = 'instantmessage';
+                $message->userfrom          = $parent;
+                $message->userto            = $teacher;
+                $message->subject           = get_string('absence_request_title', 'local_parentportal') . ': ' . $childname;
+                $message->fullmessage       = $msgtext;
+                $message->fullmessageformat = FORMAT_MARKDOWN;
+                $message->fullmessagehtml   = '<p>' . nl2br(s($msgtext)) . '</p>';
+                $message->smallmessage      = $msgtext;
+                $message->notification      = 1;
+                message_send($message);
+            }
+        } catch (\Throwable $e) {
+            // Notification delivery failure shouldn't abort the excuse submission.
+        }
+
+        return [
+            'success'  => true,
+            'message'  => get_string('absence_submitted_success', 'local_parentportal'),
+            'excuseid' => $excuseid,
+        ];
+    }
+
+    /**
+     * Get excuse notes submitted for a child.
+     *
+     * @param int $childid The child user ID.
+     * @param int|null $parentid Optional parent ID constraint.
+     * @return array Enriched excuses list.
+     */
+    public static function get_child_excuses(int $childid, ?int $parentid = null): array {
+        global $DB;
+
+        if (!$DB->get_manager()->table_exists('local_parentportal_excuses')) {
+            return [];
+        }
+
+        $params = ['childid' => $childid];
+        $where = "e.childid = :childid";
+        if ($parentid > 0) {
+            $where .= " AND e.parentid = :parentid";
+            $params['parentid'] = $parentid;
+        }
+
+        $sql = "SELECT e.*, c.fullname AS coursename
+                  FROM {local_parentportal_excuses} e
+             LEFT JOIN {course} c ON c.id = e.courseid
+                 WHERE $where
+              ORDER BY e.timecreated DESC";
+
+        $records = $DB->get_records_sql($sql, $params);
+        $results = [];
+
+        foreach ($records as $r) {
+            $badgeclass = 'bg-warning text-dark';
+            $statuslabel = get_string('absence_status_submitted', 'local_parentportal');
+            if ($r->status === 'approved') {
+                $badgeclass = 'bg-success text-white';
+                $statuslabel = get_string('absence_status_approved', 'local_parentportal');
+            } else if ($r->status === 'acknowledged') {
+                $badgeclass = 'bg-info text-white';
+                $statuslabel = get_string('absence_status_acknowledged', 'local_parentportal');
+            }
+
+            $reasonkey = 'absence_reason_' . $r->reason;
+            $reasonlabel = get_string_manager()->string_exists($reasonkey, 'local_parentportal')
+                ? get_string($reasonkey, 'local_parentportal')
+                : ucfirst($r->reason);
+
+            $coursename = get_string('absence_all_courses', 'local_parentportal');
+            if ($r->courseid > 0 && !empty($r->coursename)) {
+                $coursectx = \context_course::instance($r->courseid, IGNORE_MISSING);
+                $coursename = $coursectx ? format_string($r->coursename, true, ['context' => $coursectx]) : s($r->coursename);
+            }
+
+            $startf = userdate($r->startdate, get_string('strftimedate', 'langconfig'));
+            $endf   = userdate($r->enddate, get_string('strftimedate', 'langconfig'));
+            $datesf = ($r->startdate === $r->enddate) ? $startf : ($startf . ' - ' . $endf);
+
+            $results[] = [
+                'id'          => $r->id,
+                'courseid'    => $r->courseid,
+                'coursename'  => $coursename,
+                'startdate_f' => $startf,
+                'enddate_f'   => $endf,
+                'dates_f'     => $datesf,
+                'reason'      => $r->reason,
+                'reasonlabel' => $reasonlabel,
+                'details'     => s($r->details),
+                'status'      => $r->status,
+                'statuslabel' => $statuslabel,
+                'badgeclass'  => $badgeclass,
+                'created_f'   => userdate($r->timecreated, get_string('strftimedate', 'langconfig')),
+            ];
+        }
+
+        return $results;
     }
 }

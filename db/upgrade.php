@@ -162,5 +162,62 @@ function xmldb_local_parentportal_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026100302, 'local', 'parentportal');
     }
 
+    if ($oldversion < 2026100304) {
+
+        // Define table local_parentportal_inquiries to be created.
+        $tableinquiries = new xmldb_table('local_parentportal_inquiries');
+        $tableinquiries->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $tableinquiries->add_field('parentid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $tableinquiries->add_field('childid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $tableinquiries->add_field('courseid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $tableinquiries->add_field('teacherid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $tableinquiries->add_field('messageid', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $tableinquiries->add_field('subject', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $tableinquiries->add_field('body', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $tableinquiries->add_field('status', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'pending');
+        $tableinquiries->add_field('replybody', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $tableinquiries->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $tableinquiries->add_field('timereplied', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+
+        $tableinquiries->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $tableinquiries->add_key('parentid_fk', XMLDB_KEY_FOREIGN, ['parentid'], 'user', ['id']);
+        $tableinquiries->add_key('childid_fk', XMLDB_KEY_FOREIGN, ['childid'], 'user', ['id']);
+        $tableinquiries->add_key('courseid_fk', XMLDB_KEY_FOREIGN, ['courseid'], 'course', ['id']);
+        $tableinquiries->add_key('teacherid_fk', XMLDB_KEY_FOREIGN, ['teacherid'], 'user', ['id']);
+
+        $tableinquiries->add_index('parent_child_idx', XMLDB_INDEX_NOTUNIQUE, ['parentid', 'childid']);
+        $tableinquiries->add_index('status_idx', XMLDB_INDEX_NOTUNIQUE, ['status']);
+
+        if (!$dbman->table_exists($tableinquiries)) {
+            $dbman->create_table($tableinquiries);
+        }
+
+        // Define table local_parentportal_excuses to be created.
+        $tableexcuses = new xmldb_table('local_parentportal_excuses');
+        $tableexcuses->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $tableexcuses->add_field('parentid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $tableexcuses->add_field('childid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $tableexcuses->add_field('courseid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $tableexcuses->add_field('startdate', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $tableexcuses->add_field('enddate', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $tableexcuses->add_field('reason', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, 'medical');
+        $tableexcuses->add_field('details', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $tableexcuses->add_field('status', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'submitted');
+        $tableexcuses->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $tableexcuses->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+
+        $tableexcuses->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $tableexcuses->add_key('parentid_fk', XMLDB_KEY_FOREIGN, ['parentid'], 'user', ['id']);
+        $tableexcuses->add_key('childid_fk', XMLDB_KEY_FOREIGN, ['childid'], 'user', ['id']);
+
+        $tableexcuses->add_index('parent_child_excuses_idx', XMLDB_INDEX_NOTUNIQUE, ['parentid', 'childid']);
+
+        if (!$dbman->table_exists($tableexcuses)) {
+            $dbman->create_table($tableexcuses);
+        }
+
+        upgrade_plugin_savepoint(true, 2026100304, 'local', 'parentportal');
+    }
+
     return true;
 }

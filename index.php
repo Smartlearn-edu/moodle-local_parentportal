@@ -100,15 +100,24 @@ if ($action === 'addtocart' && confirm_sesskey()) {
         if ($added > 0) {
             \core\notification::add(get_string('courses_added_to_cart', 'local_parentportal', $added), \core\output\notification::NOTIFY_SUCCESS);
         }
-    } else if ($childid > 0) {
-        $res = manager::add_to_cart($parentid, $courseid, $childid);
-        if ($res['success']) {
-            \core\notification::add($res['message'], \core\output\notification::NOTIFY_SUCCESS);
-        } else {
-            \core\notification::add($res['message'], \core\output\notification::NOTIFY_ERROR);
-        }
     } else {
-        \core\notification::add(get_string('cart_empty', 'local_parentportal'), \core\output\notification::NOTIFY_WARNING);
+        if ($childid <= 0) {
+            $activechild = manager::get_active_child($parentid);
+            if ($activechild) {
+                $childid = (int)$activechild->id;
+            }
+        }
+
+        if ($childid > 0) {
+            $res = manager::add_to_cart($parentid, $courseid, $childid);
+            if ($res['success']) {
+                \core\notification::add($res['message'], \core\output\notification::NOTIFY_SUCCESS);
+            } else {
+                \core\notification::add($res['message'], \core\output\notification::NOTIFY_ERROR);
+            }
+        } else {
+            \core\notification::add(get_string('nochildren', 'local_parentportal'), \core\output\notification::NOTIFY_WARNING);
+        }
     }
     redirect(new moodle_url('/local/parentportal/index.php', ['tab' => 'finances']));
 }
@@ -161,6 +170,39 @@ if ($action === 'sendinquiry' && confirm_sesskey()) {
     ]));
 }
 
+// ── Action: Submit Absence Excuse Note ───────────────────────────────────────
+if ($action === 'submitexcuse' && confirm_sesskey()) {
+    $childid       = required_param('childid', PARAM_INT);
+    $courseid      = optional_param('courseid', 0, PARAM_INT);
+    $startdate_raw = optional_param('startdate', '', PARAM_RAW_TRIMMED);
+    $enddate_raw   = optional_param('enddate', '', PARAM_RAW_TRIMMED);
+    $reason        = optional_param('reason', 'medical', PARAM_ALPHA);
+    $details       = optional_param('details', '', PARAM_TEXT);
+
+    $startdate = !empty($startdate_raw) ? strtotime($startdate_raw) : time();
+    $enddate   = !empty($enddate_raw) ? strtotime($enddate_raw) : $startdate;
+
+    $res = manager::submit_absence_excuse(
+        $parentid,
+        $childid,
+        $courseid,
+        $startdate,
+        $enddate,
+        $reason,
+        $details
+    );
+
+    if ($res['success']) {
+        \core\notification::add($res['message'], \core\output\notification::NOTIFY_SUCCESS);
+    } else {
+        \core\notification::add($res['message'], \core\output\notification::NOTIFY_ERROR);
+    }
+    redirect(new moodle_url('/local/parentportal/index.php', [
+        'tab'     => 'academics',
+        'childid' => $childid,
+    ]));
+}
+
 // ── Action: Add Child Form Processing ────────────────────────────────────────
 $formurl = new moodle_url('/local/parentportal/index.php', ['tab' => $tab]);
 $addform = new add_child_form($formurl);
@@ -200,6 +242,8 @@ $childattendance = null;
 $academicsummary = null;
 $childteachers = [];
 $haschildteachers = false;
+$childexcuses = [];
+$haschildexcuses = false;
 $targetteacherid = optional_param('teacherid', 0, PARAM_INT);
 $targetcourseid  = optional_param('courseid', 0, PARAM_INT);
 
@@ -213,6 +257,8 @@ if ($activechild) {
     $academicsummary = manager::get_child_academic_summary($activechild->childid);
     $childteachers = manager::get_child_teachers($activechild->childid);
     $haschildteachers = !empty($childteachers);
+    $childexcuses = manager::get_child_excuses($activechild->childid, $parentid);
+    $haschildexcuses = !empty($childexcuses);
 }
 
 $walletbalance = manager::get_parent_wallet_balance($parentid);
@@ -224,6 +270,10 @@ $hascartitems = !empty($cartitems);
 $carttotals = manager::get_cart_totals($parentid);
 $parentorders = manager::get_parent_orders($parentid);
 $hasorders = !empty($parentorders);
+
+// Inquiries & Feedback History.
+$inquiries = manager::get_parent_inquiries($parentid, $activechild ? $activechild->childid : null);
+$hasinquiries = !empty($inquiries);
 
 // Render add child form into string for modal.
 ob_start();
@@ -267,6 +317,11 @@ $templatecontext = [
     'carttotals'        => $carttotals,
     'parentorders'      => $parentorders,
     'hasorders'         => $hasorders,
+    'inquiries'         => $inquiries,
+    'hasinquiries'      => $hasinquiries,
+    'childexcuses'      => $childexcuses,
+    'haschildexcuses'   => $haschildexcuses,
+    'today_date'        => date('Y-m-d'),
     'addchildformhtml'  => $addchildformhtml,
     'sesskey'           => sesskey(),
     'config'            => [
